@@ -37,7 +37,7 @@
             $this -> merchant_id      = $this -> settings['merchant_id'];
 	$this -> store_password   = $this -> settings['store_password'];
            $this->testmode              = $this->get_option( 'testmode' );
-            $this->testurl           = 'https://securepay.sslcommerz.com/gwprocess/testbox/v3/process.php';
+            $this->testurl           = 'https://sandbox.sslcommerz.com/gwprocess/v3/process.php';
             $this -> liveurl  = 'https://securepay.sslcommerz.com/gwprocess/v3/process.php';
             $this->notify_url        = WC()->api_request_url( 'WC_sslcommerz' );
             $this -> redirect_page_id = $this -> settings['redirect_page_id'];
@@ -181,7 +181,7 @@
 				 
 				 if(empty($val_id)){
 						 if ('yes' == $this->testmode) { 
-						  $valid_url_own = ("https://securepay.sslcommerz.com/validator/api/testbox/merchantTransIDvalidationAPI.php?tran_id=".$order_id."&Store_Id=".$store_id."&Store_Passwd=".$store_passwd."&v=1&format=json");  
+						  $valid_url_own = ("https://sandbox.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php?tran_id=".$order_id."&Store_Id=".$store_id."&Store_Passwd=".$store_passwd."&v=1&format=json");  
 						 
 						  } else{
 							 $valid_url_own = ("https://securepay.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php?tran_id=".$order_id."&Store_Id=".$store_id."&Store_Passwd=".$store_passwd."&v=1&format=json"); 
