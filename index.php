@@ -138,7 +138,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
             echo $this -> generate_SSLCommerz_form($order);
         }
     /**
-     * Generate payu button link
+     * Generate sslcommerz button link
      **/
     public function generate_SSLCommerz_form($order_id){
             global $woocommerce;
@@ -241,7 +241,7 @@ return $form;
 	
  
     /**
-     * Check for valid payu server callback
+     * Check for valid sslcommerz server callback
      **/
     function check_SSLCommerz_response(){
             global $woocommerce;
