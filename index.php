@@ -181,34 +181,10 @@ foreach($SSLCommerz_args as $param => $value) {
             foreach($SSLCommerz_args as $key => $value){
                 $paramsJoined[] = "<input type='hidden' name='$key' value='$value'/>";
             }
-         //   print_r($paramsJoined);exit;
+           print_r($paramsJoined);exit;
 $SSLCommerz_args_array   = array();
-//$SSLCommerz_args_array[] = "<input type='hidden' name='encRequest' value='$encrypted_data'/>";
-//$SSLCommerz_args_array[] = "<input type='hidden' name='access_code' value='{$this->access_code}'/>";
 
-wc_enqueue_js( '
-    $.blockUI({
-        message: "' . esc_js( __( 'Thank you for your order. We are now redirecting you to SSLCommerz to make payment.', 'woocommerce' ) ) . '",
-        baseZ: 99999,
-        overlayCSS:
-        {
-            background: "#fff",
-            opacity: 0.6
-        },
-        css: {
-            padding:        "20px",
-            zindex:         "9999999",
-            textAlign:      "center",
-            color:          "#555",
-            border:         "3px solid #aaa",
-            backgroundColor:"#fff",
-            cursor:         "wait",
-            lineHeight:     "24px",
-        }
-    });
-jQuery("#submit_SSLCommerz_payment_form").click();
-' );
-//jQuery("#submit_SSLCommerz_payment_form").click();
+
 if ( 'yes' == $this->testmode ) {
                     $liveurl = $this->testurl ;
             } else {
@@ -221,8 +197,26 @@ $form = '<form action="' . esc_url( $liveurl ) . '" method="post" id="SSLCommerz
 <input type="submit" class="button alt" id="submit_SSLCommerz_payment_form" value="' . __( 'Pay via SSLCommerz', 'woocommerce' ) . '" /> <a class="button cancel" href="' . esc_url( $order->get_cancel_order_url() ) . '">' . __( 'Cancel order &amp; restore cart', 'woocommerce' ) . '</a>
 </div>
 <script type="text/javascript">
-jQuery(".payment_buttons").hide();
-</script>
+jQuery(function(){
+jQuery("body").block(
+        {
+            message: "<img src=\"'.$woocommerce->plugin_url().'/assets/images/ajax-loader.gif\" alt=\"Redirecting…\" style=\"float:left; margin-right: 10px;\" />'.__('Thank you for your order. We are now redirecting you to Payment Gateway to make payment.', 'jmredwan').'",
+                overlayCSS:
+        {
+            background: "#fff",
+                opacity: 0.6
+    },
+    css: {
+        padding:        20,
+            textAlign:      "center",
+            color:          "#555",
+            border:         "3px solid #aaa",
+            backgroundColor:"#fff",
+            cursor:         "wait",
+            lineHeight:"32px"
+    }
+    });
+    jQuery("#submit_SSLCommerz_payment_form").click();});</script>
 </form>';
 return $form;
 
