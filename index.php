@@ -3,7 +3,7 @@
 	Plugin Name: SSLCommerz Woo Commerce Payment Gateway
 	Plugin URI: http://www.sslommerz.com.bd
 	Description: SSLCommerz Woo commerce Payment Gateway allows you to accept payment on your Woo commerce store via Visa Cards, Master cards, American Express.
-	Version: 1.0.3
+	Version: 1.0.4
 	Author: JM Redwan
 	Author URI: http://www.jmredwan.com
     Copyright: © 20015-2016 SSLCommerz.
@@ -11,51 +11,42 @@
     License URI: http://www.gnu.org/licenses/gpl-3.0.html
 */
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+add_action('plugins_loaded', 'woocommerce_sslcommerz_init', 0);
+function woocommerce_sslcommerz_init(){
+  if(!class_exists('WC_Payment_Gateway')) return;
 
- add_action('plugins_loaded', 'woocommerce_sslcommerz_init', 0);
+  class WC_sslcommerz extends WC_Payment_Gateway{
+    public function __construct(){
+      $this -> id = 'sslcommerz';
+      $this -> medthod_title = 'sslcommerz';
+      $this -> has_fields = false;
 
-    function woocommerce_sslcommerz_init() {
+      $this -> init_form_fields();
+      $this -> init_settings();
 
-        if ( !class_exists( 'WC_Payment_Gateway' ) ) return;
-
-    /**
-     * Gateway class
-     */
-    class WC_sslcommerz extends WC_Payment_Gateway {
-        public function __construct(){
-
-            // Go wild in here
-            $this -> id           = 'sslcommerz';
-            $this -> method_title = 'SSLCommerz';
-            $this -> icon         =  plugins_url( 'images/SSLCommerz.png' , __FILE__ );
-            $this -> has_fields   = false;
-            
-            $this -> init_form_fields();
-            $this -> init_settings();
-
-             $this -> title            = $this -> settings['title'];
+      $this -> title            = $this -> settings['title'];
             $this -> description      = $this -> settings['description'];
             $this -> merchant_id      = $this -> settings['merchant_id'];
 	$this -> store_password   = $this -> settings['store_password'];
            $this->testmode              = $this->get_option( 'testmode' );
-            $this->testurl           = 'https://securepay.sslcommerz.com/gwprocess/testbox/v3/process.php';
+            $this->testurl           = 'https://sandbox.sslcommerz.com/gwprocess/v3/process.php';
             $this -> liveurl  = 'https://securepay.sslcommerz.com/gwprocess/v3/process.php';
-            $this->notify_url        = WC()->api_request_url( 'WC_sslcommerz' );
-            $this -> redirect_page_id = $this -> settings['redirect_page_id'];
-            $this -> msg['message'] = "";
-            $this -> msg['class']   = "";
- 
-      add_action('init', array(&$this, 'check_payu_response'));
+      $this -> redirect_page_id = $this -> settings['redirect_page_id'];
+
+      $this -> msg['message'] = "";
+      $this -> msg['class'] = "";
+
+      add_action('init', array(&$this, 'check_sslcommerz_response'));
       if ( version_compare( WOOCOMMERCE_VERSION, '2.0.0', '>=' ) ) {
                 add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( &$this, 'process_admin_options' ) );
              } else {
                 add_action( 'woocommerce_update_options_payment_gateways', array( &$this, 'process_admin_options' ) );
             }
-      add_action('woocommerce_receipt_payu', array(&$this, 'receipt_page'));
+      add_action('woocommerce_receipt_sslcommerz', array(&$this, 'receipt_page'));
    }
     function init_form_fields(){
 
-            $this -> form_fields = array(
+       $this -> form_fields = array(
                 'enabled' => array(
                     'title' => __('Enable/Disable', 'jmredwan'),
                     'type' => 'checkbox',
@@ -104,56 +95,48 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
                     'description' => "URL of success page"
                 )
                 );
+    }
 
+       public function admin_options(){
+        echo '<h3>'.__('sslcommerz Payment Gateway', 'sslcommerz').'</h3>';
+        echo '<p>'.__('SSLCommerz is most popular payment gateway for online shopping in Bangladesh').'</p>';
+        echo '<table class="form-table">';
+        // Generate the HTML For the settings form.
+        $this -> generate_settings_html();
+        echo '</table>';
 
-	}
- 
-       /**
-         * Admin Panel Options
-         * - Options for bits like 'title' and availability on a country-by-country basis
-         **/
-        public function admin_options(){
-            echo '<h3>'.__('SSLCommerz Payment Gateway', 'jmredwan').'</h3>';
-            echo '<p>'.__('SSLCommerz is most popular payment gateway for online shopping in Bangladesh').'</p>';
-            echo '<table class="form-table">';
-            $this -> generate_settings_html();
-            echo '</table>';
+    }
 
-        }
-        /**
-         *  There are no payment fields for SSLCommerz, but we want to show the description if set.
-         **/
-        function payment_fields(){
-            if($this -> description) echo wpautop(wptexturize($this -> description));
-        }
-        /**
-         * Receipt Page
-         **/
+    /**
+     *  There are no payment fields for sslcommerz, but we want to show the description if set.
+     **/
+    function payment_fields(){
+        if($this -> description) echo wpautop(wptexturize($this -> description));
+    }
     /**
      * Receipt Page
      **/
     function receipt_page($order){
-
-            echo '<p>'.__('Thank you for your order, please click the button below to pay with SSLCommerz.', 'jmredwan').'</p>';
-            echo $this -> generate_SSLCommerz_form($order);
-        }
+        echo '<p>'.__('Thank you for your order, please click the button below to pay with sslcommerz.', 'sslcommerz').'</p>';
+        echo $this -> generate_sslcommerz_form($order);
+    }
     /**
      * Generate sslcommerz button link
      **/
-    public function generate_SSLCommerz_form($order_id){
-            global $woocommerce;
-            $order = new WC_Order($order_id);
+    public function generate_sslcommerz_form($order_id){
+
+       $order = new WC_Order($order_id);
             $order_id = $order_id.'_'.date("ymds");
             $redirect_url = ($this -> redirect_page_id=="" || $this -> redirect_page_id==0)?get_site_url() . "/":get_permalink($this -> redirect_page_id);
             $fail_url = ($this -> fail_page_id=="" || $this -> fail_page_id==0)?get_site_url() . "/":get_permalink($this -> fail_page_id);
            $redirect_url = add_query_arg( 'wc-api', get_class( $this ), $redirect_url );
             $fail_url = add_query_arg( 'wc-api', get_class( $this ), $fail_url );
             $declineURL = $order->get_cancel_order_url();
-            $SSLCommerz_args = array(
+            $sslcommerz_args = array(
                 'store_id'      => $this -> merchant_id,
                 'total_amount'           => $order -> order_total,
                 'tran_id'         => $order_id,
-                 'success_url' => $redirect_url,
+                'success_url' => $redirect_url,
                 'fail_url' => $fail_url,
                 'cancel_url' => $declineURL,
                 'cus_name'     => $order -> billing_first_name .' '. $order -> billing_last_name,
@@ -174,33 +157,25 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
                 'currency'         => get_woocommerce_currency()
                 );
 
-foreach($SSLCommerz_args as $param => $value) {
- $paramsJoined[] = "$param=$value";
-}
-   $paramsJoined = array();
-            foreach($SSLCommerz_args as $key => $value){
-                $paramsJoined[] = "<input type='hidden' name='$key' value='$value'/>";
+        $sslcommerz_args_array = array();
+        foreach($sslcommerz_args as $key => $value){
+          $sslcommerz_args_array[] = "<input type='hidden' name='$key' value='$value'/>";
+        }
+		
+	    if($this->testmode == 'yes'){
+                    $liveurl = $this->testurl;
+            }else{
+                    $liveurl = $this->liveurl;
             }
-           print_r($paramsJoined);exit;
-$SSLCommerz_args_array   = array();
-
-
-if ( 'yes' == $this->testmode ) {
-                    $liveurl = $this->testurl ;
-            } else {
-                    $liveurl = $this->liveurl ;
-            }
-$form = '<form action="' . esc_url( $liveurl ) . '" method="post" id="SSLCommerz_payment_form" target="_top">
-' . implode( '', $paramsJoined ) . '
-<!-- Button Fallback -->
-<div class="payment_buttons">
-<input type="submit" class="button alt" id="submit_SSLCommerz_payment_form" value="' . __( 'Pay via SSLCommerz', 'woocommerce' ) . '" /> <a class="button cancel" href="' . esc_url( $order->get_cancel_order_url() ) . '">' . __( 'Cancel order &amp; restore cart', 'woocommerce' ) . '</a>
-</div>
-<script type="text/javascript">
+		
+        return '<form action="'.$liveurl.'" method="post" id="sslcommerz_payment_form">
+            ' . implode('', $sslcommerz_args_array) . '
+            <input type="submit" class="button-alt" id="submit_sslcommerz_payment_form" value="'.__('Pay via sslcommerz', 'sslcommerz').'" /> <a class="button cancel" href="'.$order->get_cancel_order_url().'">'.__('Cancel order &amp; restore cart', 'sslcommerz').'</a>
+            <script type="text/javascript">
 jQuery(function(){
 jQuery("body").block(
         {
-            message: "<img src=\"'.$woocommerce->plugin_url().'/assets/images/ajax-loader.gif\" alt=\"Redirecting…\" style=\"float:left; margin-right: 10px;\" />'.__('Thank you for your order. We are now redirecting you to Payment Gateway to make payment.', 'jmredwan').'",
+            message: "<img src=\"/assets/images/ajax-loader.gif\" alt=\"Redirecting…\" style=\"float:left; margin-right: 10px;\" />'.__('Thank you for your order. We are now redirecting you to Payment Gateway to make payment.', 'sslcommerz').'",
                 overlayCSS:
         {
             background: "#fff",
@@ -216,29 +191,27 @@ jQuery("body").block(
             lineHeight:"32px"
     }
     });
-    jQuery("#submit_SSLCommerz_payment_form").click();});</script>
-</form>';
-return $form;
+    jQuery("#submit_sslcommerz_payment_form").click();});</script>
+            </form>';
 
 
-
-}
+    }
     /**
      * Process the payment and return the result
      **/
     function process_payment($order_id){
-        $order = new WC_Order($order_id);
+        global $woocommerce;
+    	$order = new WC_Order( $order_id );
         return array('result' => 'success', 'redirect' => add_query_arg('order',
             $order->id, add_query_arg('key', $order->order_key, get_permalink(get_option('woocommerce_pay_page_id'))))
         );
     }
-	
- 
+
     /**
      * Check for valid sslcommerz server callback
      **/
-    function check_SSLCommerz_response(){
-            global $woocommerce;
+    function check_sslcommerz_response(){
+        global $woocommerce;
             $info = explode("_", $_REQUEST['tran_id']);
             $order_id=$info[0];
            $order = wc_get_order($info[0] );
@@ -270,7 +243,7 @@ return $form;
 				 
 				 if(empty($val_id)){
 						 if ('yes' == $this->testmode) { 
-						  $valid_url_own = ("https://securepay.sslcommerz.com/validator/api/testbox/merchantTransIDvalidationAPI.php?tran_id=".$order_id."&Store_Id=".$store_id."&Store_Passwd=".$store_passwd."&v=1&format=json");  
+						  $valid_url_own = ("https://sandbox.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php?tran_id=".$order_id."&Store_Id=".$store_id."&Store_Passwd=".$store_passwd."&v=1&format=json");  
 						 
 						  } else{
 							 $valid_url_own = ("https://securepay.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php?tran_id=".$order_id."&Store_Id=".$store_id."&Store_Passwd=".$store_passwd."&v=1&format=json"); 
@@ -298,11 +271,9 @@ return $form;
 					 
 						 
 }
-
-
-			
-                if ('yes' == $this->testmode) { 
-                $requested_url = ("https://securepay.sslcommerz.com/validator/api/testbox/validationserverAPI.php?val_id=".$val_id."&Store_Id=".$store_id."&Store_Passwd=".$store_passwd."&v=1&format=json");  
+		
+             if ('yes' == $this->testmode) { 
+                $requested_url = ("https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php?val_id=".$val_id."&Store_Id=".$store_id."&Store_Passwd=".$store_passwd."&v=1&format=json");  
                 } else{
                $requested_url = ("https://securepay.sslcommerz.com/validator/api/validationserverAPI.php?val_id=".$val_id."&Store_Id=".$store_id."&Store_Passwd=".$store_passwd."&v=1&format=json");
                 }  
@@ -447,9 +418,8 @@ if($code == 200 && !( curl_errno($handle)))
                 wp_redirect( $redirect_url );
             }
 
+    }
 
-}
- 
     function showMessage($content){
             return '<div class="box '.$this -> msg['class'].'-box">'.$this -> msg['message'].'</div>'.$content;
         }
@@ -482,6 +452,6 @@ if($code == 200 && !( curl_errno($handle)))
         $methods[] = 'WC_sslcommerz';
         return $methods;
     }
- 
+
     add_filter('woocommerce_payment_gateways', 'woocommerce_add_sslcommerz_gateway' );
 }
