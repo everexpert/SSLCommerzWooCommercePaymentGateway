@@ -3,7 +3,7 @@
 	Plugin Name: SSLCommerz Woo Commerce Payment Gateway
 	Plugin URI: http://www.sslommerz.com.bd
 	Description: SSLCommerz Woo commerce Payment Gateway allows you to accept payment on your Woo commerce store via Visa Cards, Master cards, American Express.
-	Version: 1.0.3
+	Version: 1.0.4
 	Author: JM Redwan
 	Author URI: http://www.jmredwan.com
     Copyright: © 20015-2016 SSLCommerz.
@@ -29,8 +29,8 @@ function woocommerce_sslcommerz_init(){
             $this -> merchant_id      = $this -> settings['merchant_id'];
 	$this -> store_password   = $this -> settings['store_password'];
            $this->testmode              = $this->get_option( 'testmode' );
-            $this->testurl           = 'https://sandbox.sslcommerz.com/gwprocess/v3/process.php';
-            $this -> liveurl  = 'https://securepay.sslcommerz.com/gwprocess/v3/process.php';
+            $this->testurl           =  "https://sandbox.sslcommerz.com/gwprocess/v3/api.php";
+            $this -> liveurl  =  "https://securepay.sslcommerz.com/gwprocess/v3/api.php";
       $this -> redirect_page_id = $this -> settings['redirect_page_id'];
 
       $this -> msg['message'] = "";
@@ -137,16 +137,21 @@ function woocommerce_sslcommerz_init(){
            $redirect_url = add_query_arg( 'wc-api', get_class( $this ), $redirect_url );
             $fail_url = add_query_arg( 'wc-api', get_class( $this ), $fail_url );
             $declineURL = $order->get_cancel_order_url();
-            $sslcommerz_args = array(
+            
+            
+            
+            //NEW API OF SSLCOMMERZ
+            $post_data = array(
                 'store_id'      => $this -> merchant_id,
+                'store_passwd' => $this->store_password,
                 'total_amount'           => $order -> order_total,
                 'tran_id'         => $order_id,
                 'success_url' => $redirect_url,
                 'fail_url' => $fail_url,
                 'cancel_url' => $declineURL,
-                'cus_name'     => $order -> billing_first_name .' '. $order -> billing_last_name,
+                'cus_name'     => $order->billing_first_name .' '. $order->billing_last_name,
                 'cus_add1'  => trim($order -> billing_address_1, ','),
-                'cus_country'  => wc()->countries -> countries [$order -> billing_country],
+                'cus_country'  => wc()->countries->countries [$order->billing_country],
                 'cus_state'    => $order -> billing_state,
                 'cus_city'     => $order -> billing_city,
                 'cus_postcode'      => $order -> billing_postcode,
@@ -162,19 +167,50 @@ function woocommerce_sslcommerz_init(){
                 'currency'         => get_woocommerce_currency()
                 );
 
-        $sslcommerz_args_array = array();
-        foreach($sslcommerz_args as $key => $value){
-          $sslcommerz_args_array[] = "<input type='hidden' name='$key' value='$value'/>";
-        }
+
+      
 		
 	    if($this->testmode == 'yes'){
                     $liveurl = $this->testurl;
             }else{
                     $liveurl = $this->liveurl;
             }
-		
-        return '<form action="'.$liveurl.'" method="post" id="sslcommerz_payment_form">
-            ' . implode('', $sslcommerz_args_array) . '
+
+# REQUEST SEND TO SSLCOMMERZ
+
+$handle = curl_init();
+curl_setopt($handle, CURLOPT_URL, $liveurl);
+curl_setopt($handle, CURLOPT_TIMEOUT, 10);
+curl_setopt($handle, CURLOPT_CONNECTTIMEOUT, 10);
+curl_setopt($handle, CURLOPT_POST, 1 );
+curl_setopt($handle, CURLOPT_POSTFIELDS, $post_data);
+curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
+
+
+$content = curl_exec($handle );
+
+$code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+
+if($code == 200 && !( curl_errno($handle))) {
+	curl_close( $handle);
+	$sslcommerzResponse = $content;
+	
+# PARSE THE JSON RESPONSE
+$sslcz = json_decode($sslcommerzResponse, true );
+} else {
+	curl_close( $handle);
+	echo "FAILED TO CONNECT WITH SSLCOMMERZ API";
+	exit;
+}
+
+
+
+
+
+//echo '<pre>';
+	//print_r($sslcz['GatewayPageURL']);
+//exit;	
+        return '<form action="'.$sslcz['GatewayPageURL'].'" method="post" id="sslcommerz_payment_form">
             <input type="submit" class="button-alt" id="submit_sslcommerz_payment_form" value="'.__('Pay via sslcommerz', 'sslcommerz').'" /> <a class="button cancel" href="'.$order->get_cancel_order_url().'">'.__('Cancel order &amp; restore cart', 'sslcommerz').'</a>
             <script type="text/javascript">
 jQuery(function(){
